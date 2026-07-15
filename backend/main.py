@@ -24,3 +24,5 @@ def list_users():
 @app.post("/api/pipeline/run")
 def run_pipeline(user_id: str):
     raise HTTPException(status_code=501, detail="Pipeline not implemented yet")
+
+# trigger ci
