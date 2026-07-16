@@ -66,6 +66,8 @@ The Rules Engine layer of BRAHMO makes access-control and relevance decisions. A
 | LLM usage | None, anywhere in this pipeline |
 
 ## Project structure
+```
+
 brahmo-rules-engine/
 ├── backend/
 │   ├── main.py
@@ -93,6 +95,8 @@ brahmo-rules-engine/
 │   └── seed.sql
 └── docs/
 └── architecture.md
+
+```
 
 ## Performance
 
@@ -137,5 +141,3 @@ cd frontend && npm install && npm run dev
 ## License
 
 Internal assessment project.
-
-
