@@ -11,7 +11,7 @@ Nurse Priya opens an AI session on the Ortho Ward. She should see Supra's Ortho 
 ```mermaid
 flowchart TD
     A[User Session Start] --> B[Permission Compiler]
-    B -->|O(1) lookup: level to can_read/can_write| C[Entry Point Resolver]
+    B -->|O-1 lookup: level to can_read and can_write| C[Entry Point Resolver]
     C -->|Maps department to DAG leaf node| D[BFS Traversal]
     D -->|Walks UP the DAG, visited set prevents reprocessing| E[Zone 2 Injection]
     E -->|Injects hospital-wide GLOBAL nodes| F[Five-Check Sequential Filter]
@@ -137,3 +137,4 @@ cd frontend && npm install && npm run dev
 ## License
 
 Internal assessment project.
+
