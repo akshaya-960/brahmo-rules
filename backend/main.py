@@ -1,6 +1,7 @@
-﻿from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from db import supabase
+from pipeline.orchestrator import run_pipeline
 
 app = FastAPI(title="BRAHMO Rules Engine")
 
@@ -22,7 +23,8 @@ def list_users():
     return result.data
 
 @app.post("/api/pipeline/run")
-def run_pipeline(user_id: str):
-    raise HTTPException(status_code=501, detail="Pipeline not implemented yet")
-
-# trigger ci
+def run_pipeline_endpoint(user_id: str):
+    try:
+        return run_pipeline(user_id, supabase)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
