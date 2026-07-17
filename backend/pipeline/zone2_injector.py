@@ -1,4 +1,4 @@
-﻿"""
+"""
 Zone 2 Injector
 Adds hospital-wide GLOBAL nodes (zone=2) into the BFS-reachable set.
 They arrive regardless of traversal path, but still go through all 5 checks.

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Entry Point Resolver
 Maps a user to the hierarchy_levels row that is their BFS starting position.
 """

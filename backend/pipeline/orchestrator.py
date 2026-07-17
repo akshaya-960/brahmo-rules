@@ -1,4 +1,4 @@
-﻿"""
+"""
 Pipeline Orchestrator
 Permission Compiler -> Entry Point Resolver -> BFS -> Zone2 Injection ->
 Five-Check Filter -> Candidate Assembler, with per-stage timing + funnel counts.

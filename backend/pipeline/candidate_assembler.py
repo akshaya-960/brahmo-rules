@@ -1,4 +1,4 @@
-﻿"""
+"""
 Candidate Set Assembler
 Annotates surviving nodes with the metadata the downstream Composition Agent needs.
 """

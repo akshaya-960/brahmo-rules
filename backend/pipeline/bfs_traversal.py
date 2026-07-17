@@ -1,4 +1,4 @@
-﻿"""
+"""
 BFS Traversal
 Walks the hierarchy DAG in both directions from the entry point, then
 expands downward again from same-department ancestors so sibling
