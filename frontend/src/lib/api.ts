@@ -10,9 +10,12 @@ export async function fetchUsers(): Promise<User[]> {
   return res.json();
 }
 
-export async function runPipeline(userId: string): Promise<PipelineResult> {
+export async function runPipeline(
+  userId: string,
+  includeZone2: boolean = true
+): Promise<PipelineResult> {
   const res = await fetch(
-    `${API_URL}/api/pipeline/run?user_id=${encodeURIComponent(userId)}`,
+    `${API_URL}/api/pipeline/run?user_id=${encodeURIComponent(userId)}&include_zone2=${includeZone2}`,
     { method: "POST" }
   );
   if (!res.ok) {

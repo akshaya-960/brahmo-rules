@@ -1,34 +1,36 @@
-"""
+﻿"""
 Pipeline Orchestrator
 Permission Compiler -> Entry Point Resolver -> BFS -> Zone2 Injection ->
 Five-Check Filter -> Candidate Assembler, with per-stage timing + funnel counts.
 """
 import time
 
-from pipeline.permission_compiler import compile_permissions
-from pipeline.entry_point_resolver import resolve_entry_point
-from pipeline.bfs_traversal import bfs_traverse
-from pipeline.zone2_injector import inject_zone2
-from pipeline.five_check_filter import (
+from backend.db import get_hierarchy_levels, get_knowledge_nodes, get_user
+from backend.pipeline.permission_compiler import compile_permissions
+from backend.pipeline.entry_point_resolver import resolve_entry_point
+from backend.pipeline.bfs_traversal import bfs_traverse
+from backend.pipeline.zone2_injector import inject_zone2
+from backend.pipeline.five_check_filter import (
     check1_isolation, check2_compliance, check3_permission,
     check4_temporal, check5_derivability,
 )
-from pipeline.candidate_assembler import assemble_candidates
+from backend.pipeline.candidate_assembler import assemble_candidates
 
 
-def run_pipeline(user_id: str, supabase) -> dict:
+def run_pipeline(user_id: str, supabase, include_zone2: bool = True) -> dict:
     t_start = time.perf_counter()
 
-    user_res = supabase.table("users").select("*").eq("id", user_id).execute()
-    if not user_res.data:
+    user = get_user(user_id)
+    if not user:
         raise ValueError(f"Unknown user_id: {user_id}")
-    user = user_res.data[0]
+    org_id = user["org_id"]
 
-    total_nodes = supabase.table("knowledge_nodes").select("id", count="exact") \
-        .eq("org_id", user["org_id"]).execute().count
+    t0 = time.perf_counter()
+    hierarchy_levels = get_hierarchy_levels(org_id)
+    all_nodes = get_knowledge_nodes(org_id)
+    t_fetch = (time.perf_counter() - t0) * 1000
 
-    hierarchy_levels = supabase.table("hierarchy_levels").select("*") \
-        .eq("org_id", user["org_id"]).execute().data
+    total_nodes = len(all_nodes)
     level_number_by_id = {h["id"]: h["level_number"] for h in hierarchy_levels}
 
     t0 = time.perf_counter()
@@ -44,25 +46,28 @@ def run_pipeline(user_id: str, supabase) -> dict:
     t_bfs = (time.perf_counter() - t0) * 1000
 
     reachable_level_ids = list(level_distances.keys())
-    bfs_nodes = supabase.table("knowledge_nodes").select("*") \
-        .eq("org_id", user["org_id"]) \
-        .in_("hierarchy_level_id", reachable_level_ids).execute().data
 
-    node_map = {n["id"]: n for n in bfs_nodes}
-    distance_map = {n["id"]: level_distances.get(n["hierarchy_level_id"], 0) for n in bfs_nodes}
+    node_map = {
+        n["id"]: n for n in all_nodes
+        if n["hierarchy_level_id"] in reachable_level_ids
+    }
+    distance_map = {
+        n["id"]: level_distances.get(n["hierarchy_level_id"], 0)
+        for n in node_map.values()
+    }
     after_bfs = len(node_map)
 
     t0 = time.perf_counter()
-    zone2_nodes = supabase.table("knowledge_nodes").select("*") \
-        .eq("org_id", user["org_id"]).eq("zone", 2).execute().data
-    inject_zone2(node_map, distance_map, zone2_nodes, level_distances)
+    if include_zone2:
+        zone2_nodes = [n for n in all_nodes if n["zone"] == 2]
+        inject_zone2(node_map, distance_map, zone2_nodes, level_distances)
     t_zone2 = (time.perf_counter() - t0) * 1000
     after_zone2 = len(node_map)
 
     combined = list(node_map.values())
 
     t0 = time.perf_counter()
-    c1 = check1_isolation(combined, user["org_id"])
+    c1 = check1_isolation(combined, org_id)
     t_c1 = (time.perf_counter() - t0) * 1000
 
     t0 = time.perf_counter()
@@ -92,6 +97,7 @@ def run_pipeline(user_id: str, supabase) -> dict:
         "ceiling_level": user["ceiling_level"],
         "entry_point": entry_level["id"],
         "pipeline_timing": {
+            "fetch_ms": round(t_fetch, 2),
             "permission_compile_ms": round(t_compile, 2),
             "entry_resolve_ms": round(t_entry, 2),
             "bfs_ms": round(t_bfs, 2),

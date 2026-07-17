@@ -12,6 +12,7 @@ import ComparisonView from "@/components/ComparisonView";
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [includeZone2, setIncludeZone2] = useState(true);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [comparisonResults, setComparisonResults] = useState<PipelineResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const res = await runPipeline(selectedUserId);
+      const res = await runPipeline(selectedUserId, includeZone2);
       setResult(res);
     } catch (e: any) {
       setError(e.message);
@@ -62,6 +63,14 @@ export default function Home() {
             onSelect={setSelectedUserId}
             loading={loading}
           />
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={includeZone2}
+              onChange={(e) => setIncludeZone2(e.target.checked)}
+            />
+            Include Zone 2 (Global Safety Nodes)
+          </label>
           <button
             onClick={handleRun}
             disabled={!selectedUserId || loading}

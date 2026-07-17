@@ -1,4 +1,4 @@
-"""
+﻿"""
 Five-Check Sequential Filter
 Each check consumes the OUTPUT of the previous check - never parallel.
 """

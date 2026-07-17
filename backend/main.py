@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException
+﻿from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from db import supabase
-from pipeline.orchestrator import run_pipeline
+from backend.db import supabase
+from backend.pipeline.orchestrator import run_pipeline
 
 app = FastAPI(title="BRAHMO Rules Engine")
 
@@ -23,8 +23,9 @@ def list_users():
     return result.data
 
 @app.post("/api/pipeline/run")
-def run_pipeline_endpoint(user_id: str):
+def run_pipeline_endpoint(user_id: str, include_zone2: str = "true"):
+    include_zone2_bool = include_zone2.lower() not in ("false", "0", "no")
     try:
-        return run_pipeline(user_id, supabase)
+        return run_pipeline(user_id, supabase, include_zone2_bool)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

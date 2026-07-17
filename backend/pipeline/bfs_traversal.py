@@ -1,41 +1,14 @@
 ﻿"""
 BFS Traversal
-Walks the hierarchy DAG in BOTH directions from the entry point:
-  - UPWARD via parent_ids (ancestors) -- broader/more general context,
-    e.g. a ward nurse gains visibility into her department's and the
-    hospital's cross-cutting policies as she "climbs" the tree.
-  - DOWNWARD via each node's own children (descendants of the ENTRY POINT
-    ONLY) -- more specific context that structurally sits below the user's
-    own position, e.g. a department HOD sees every ward/unit/patient node
-    beneath their department root, not just the path up to the hospital.
-
-CRITICAL: downward expansion starts ONLY from the entry point itself and
-never cascades further downward from an ancestor discovered during upward
-traversal. Without this restriction, climbing to a shared ancestor (e.g.
-"Clinical Division") would incorrectly unlock every sibling department's
-entire subtree (Medicine, Cardiology, Paediatrics, etc), breaking
-department isolation. Ancestors are included as single nodes, not as
-whole subtrees.
-
-This also fixes a structural edge case: when a user's entry point IS the
-hospital root (e.g. ADMIN, or any role whose department has no dedicated
-DAG node and falls back to root), pure upward-only traversal would reach
-almost nothing, since the root has no parents to walk to. Downward
-expansion from the root correctly reaches the entire graph -- which is
-exactly the intended behavior for an admin sitting at the top of the
-hierarchy.
-
-Visited set prevents re-processing multi-parent nodes and blocks cycles
-in both directions.
+Walks the hierarchy DAG in both directions from the entry point, then
+expands downward again from same-department ancestors so sibling
+units (e.g. TKR Unit) under the same department root are reachable.
 """
 from collections import deque, defaultdict
-
 
 def bfs_traverse(entry_level_id: str, hierarchy_levels: list) -> dict:
     """Returns {level_id: distance_from_entry} for every reachable level."""
     levels_by_id = {h["id"]: h for h in hierarchy_levels}
-
-    # Reverse index: parent_id -> [child_ids], built once per call.
     children_by_id = defaultdict(list)
     for h in hierarchy_levels:
         for parent_id in (h.get("parent_ids") or []):
@@ -58,10 +31,21 @@ def bfs_traverse(entry_level_id: str, hierarchy_levels: list) -> dict:
             distances[parent_id] = distances[current_id] + 1
             queue.append(parent_id)
 
-    # ---- Phase 2: walk DOWN via children, starting ONLY from entry ----
-    # (never from ancestors found in Phase 1 -- that would leak sibling
-    # departments' entire subtrees through a shared ancestor.)
-    queue = deque([entry_level_id])
+    # ---- Phase 2: walk DOWN via children ----
+    # Seed from entry point AND from any ancestor sharing entry's department
+    # (reaches sibling units like TKR Unit under the same department root),
+    # but NOT from department=None ancestors (Clinical Division, Hospital
+    # root) -- that would leak other departments' entire subtrees.
+    entry_department = levels_by_id.get(entry_level_id, {}).get("department")
+    down_seeds = [entry_level_id]
+    for level_id in list(distances.keys()):
+        if level_id == entry_level_id:
+            continue
+        level = levels_by_id.get(level_id)
+        if level and entry_department is not None and level.get("department") == entry_department:
+            down_seeds.append(level_id)
+
+    queue = deque(down_seeds)
     while queue:
         current_id = queue.popleft()
         for child_id in children_by_id.get(current_id, []):

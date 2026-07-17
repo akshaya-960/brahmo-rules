@@ -1,4 +1,4 @@
-"""
+﻿"""
 Permission Compiler
 Compiles a user role/ceiling into an O(1) lookup table ONCE per session.
 Avoids per-node DB queries (N+1 problem) during the five-check filter.
