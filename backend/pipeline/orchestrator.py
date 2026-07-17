@@ -45,6 +45,21 @@ def run_pipeline(user_id: str, supabase, include_zone2: bool = True) -> dict:
     level_distances = bfs_traverse(entry_level["id"], hierarchy_levels)
     t_bfs = (time.perf_counter() - t0) * 1000
 
+    # Zone 2 (GLOBAL) levels must only enter the candidate set through the
+    # explicit Zone 2 injection step below -- never via plain BFS reach.
+    # Without this, a root-entry user (e.g. ADMIN at HL-01) would reach
+    # HL-GLOBAL structurally through the DAG, making the include_zone2
+    # toggle silently do nothing for that user.
+    zone2_level_ids = {h["id"] for h in hierarchy_levels if h.get("zone") == 2}
+    level_distances = {
+        level_id: dist for level_id, dist in level_distances.items()
+        if level_id not in zone2_level_ids
+    }
+
+    zone2_level_ids = {h["id"] for h in hierarchy_levels if h.get("zone") == 2}
+    level_distances = {lvl: dist for lvl, dist in level_distances.items() if lvl not in zone2_level_ids}
+    zone2_level_ids = {h["id"] for h in hierarchy_levels if h.get("zone") == 2}
+    level_distances = {lvl: dist for lvl, dist in level_distances.items() if lvl not in zone2_level_ids}
     reachable_level_ids = list(level_distances.keys())
 
     node_map = {

@@ -67,7 +67,7 @@ export default function Home() {
             <input
               type="checkbox"
               checked={includeZone2}
-              onChange={(e) => setIncludeZone2(e.target.checked)}
+              onChange={(e) => { setIncludeZone2(e.target.checked); setResult(null); }}
             />
             Include Zone 2 (Global Safety Nodes)
           </label>
@@ -122,3 +122,4 @@ export default function Home() {
     </main>
   );
 }
+
